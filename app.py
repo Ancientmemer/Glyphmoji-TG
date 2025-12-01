@@ -183,7 +183,7 @@ def handle_start(message):
 
     # Fallback: use direct Telegram HTTP API (so we can log response body)
     try:
-        tg_api = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        tg_api = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
         payload = {
             "chat_id": chat_id,
             "text": text,
