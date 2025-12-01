@@ -171,7 +171,8 @@ def handle_start(message):
             "/changemod [emoji|unicode] - change or toggle mode\n"
             "/encode <text> - encode\n"
             "/decode <glyphs> - decode\n\n"
-            "Send plain text to auto-encode.")
+            "Send plain text to auto-encode.\n\n"
+            "ᴩᴏᴡᴇʀᴇᴅ ʙʏ: @jb_links")
     bot.send_message(chat_id, text)
 
 @bot.message_handler(commands=['help'])
@@ -233,8 +234,13 @@ def handle_decode(message):
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_plain_text(message):
-    chat_id = message.chat.id
+    # Ignore messages that are bot commands so command handlers run first
     txt = message.text or ""
+    if txt.startswith("/"):
+        # Let telebot handle commands with registered command handlers
+        return
+
+    chat_id = message.chat.id
     mode = get_mode_for_chat(chat_id)
     res = encode_text_with_mode(txt, mode)
     bot.send_message(chat_id, res)
