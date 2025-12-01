@@ -1,17 +1,19 @@
-#!/usr/bin/env bash
-# Usage: ./set_webhook.sh https://your-app.koyeb.app
-if [ -z "$1" ]; then
-  echo "Usage: $0 https://your-app.koyeb.app"
-  exit 1
-fi
+import requests
 
-APP_URL="$1"
-if [ -z "$TG_TOKEN" ]; then
-  echo "Export TG_TOKEN in your shell first (export TG_TOKEN=...)"
-  exit 1
-fi
+@app.route("/set_webhook")
+def set_webhook():
+    token = os.environ.get("TG_TOKEN")
+    if not token:
+        return {"error": "TG_TOKEN not set in environment"}, 500
 
-WEBHOOK_URL="${APP_URL}/${TG_TOKEN}"
-echo "Setting webhook to $WEBHOOK_URL"
+    # your domain (must be HTTPS)
+    domain = request.host_url.rstrip("/")   # example: https://worthwhile-ines-eldro-new-3ee9cf70.koyeb.app
 
-curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/setWebhook" -F "url=${WEBHOOK_URL}" | jq . || true
+    # your webhook endpoint is /<TOKEN>  (already defined in your app.py)
+    webhook_url = f"{domain}/{token}"
+
+    telegram_api = f"https://api.telegram.org/bot{token}/setWebhook"
+
+    res = requests.post(telegram_api, data={"url": webhook_url})
+
+    return res.json(), res.status_code
