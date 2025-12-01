@@ -161,6 +161,11 @@ def decode_text_with_mode(text: str, mode: str) -> str:
 # ---------- Bot command handlers (telebot) ----------
 @bot.message_handler(commands=['start'])
 def handle_start(message):
+    logger.info("start handler called — msg_id=%s chat=%s text=%s entities=%s",
+                getattr(message, 'message_id', None),
+                getattr(getattr(message, 'chat', None), 'id', None),
+                getattr(message, 'text', None),
+                getattr(message, 'entities', None))
     chat_id = message.chat.id
     mode = get_mode_for_chat(chat_id)
     text = (f"GlyphMoji bot ready. Current mode: <b>{mode}</b>\n\n"
@@ -171,12 +176,12 @@ def handle_start(message):
             "/changemod [emoji|unicode] - change or toggle mode\n"
             "/encode <text> - encode\n"
             "/decode <glyphs> - decode\n\n"
-            "Send plain text to auto-encode.\n\n"
-            "ᴩᴏᴡᴇʀᴇᴅ ʙʏ: @jb_links")
+            "Send plain text to auto-encode.")
     bot.send_message(chat_id, text)
 
 @bot.message_handler(commands=['help'])
 def handle_help(message):
+    logger.info("help handler called — chat=%s text=%s", getattr(getattr(message, 'chat', None), 'id', None), getattr(message, 'text', None))
     chat_id = message.chat.id
     bot.send_message(chat_id, (
         "/start - Welcome\n"
@@ -189,12 +194,14 @@ def handle_help(message):
 
 @bot.message_handler(commands=['mode'])
 def handle_mode(message):
+    logger.info("mode handler called — chat=%s", getattr(getattr(message, 'chat', None), 'id', None))
     chat_id = message.chat.id
     mode = get_mode_for_chat(chat_id)
     bot.send_message(chat_id, f"Current mode for this chat: <b>{mode}</b>")
 
 @bot.message_handler(commands=['changemod'])
 def handle_changemod(message):
+    logger.info("changemod handler called — chat=%s text=%s", getattr(getattr(message, 'chat', None), 'id', None), getattr(message, 'text', None))
     chat_id = message.chat.id
     parts = message.text.split()
     current = get_mode_for_chat(chat_id)
@@ -212,6 +219,7 @@ def handle_changemod(message):
 
 @bot.message_handler(commands=['encode'])
 def handle_encode(message):
+    logger.info("encode handler called — chat=%s text=%s", getattr(getattr(message, 'chat', None), 'id', None), getattr(message, 'text', None))
     chat_id = message.chat.id
     txt = message.text.partition(' ')[2].strip()
     if not txt:
@@ -223,6 +231,7 @@ def handle_encode(message):
 
 @bot.message_handler(commands=['decode'])
 def handle_decode(message):
+    logger.info("decode handler called — chat=%s text=%s", getattr(getattr(message, 'chat', None), 'id', None), getattr(message, 'text', None))
     chat_id = message.chat.id
     txt = message.text.partition(' ')[2].strip()
     if not txt:
@@ -234,10 +243,16 @@ def handle_decode(message):
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_plain_text(message):
-    # Ignore messages that are bot commands so command handlers run first
     txt = message.text or ""
+    # Robust: treat as command only when Telegram marks it as bot_command entity
+    entities = getattr(message, "entities", []) or []
+    is_command = any(getattr(e, 'type', '') == 'bot_command' for e in entities)
+    if is_command:
+        logger.info("Ignoring command in plain-text handler: %s", txt)
+        return
+    # fallback: ignore slash-leading text
     if txt.startswith("/"):
-        # Let telebot handle commands with registered command handlers
+        logger.info("Ignoring slash-leading text in plain-text handler: %s", txt)
         return
 
     chat_id = message.chat.id
@@ -250,6 +265,7 @@ def handle_plain_text(message):
 def webhook():
     try:
         update_json = request.get_json(force=True)
+        logger.info("Incoming raw update: %s", update_json)   # <-- debug log
         update = telebot.types.Update.de_json(update_json)
         bot.process_new_updates([update])
     except Exception as e:
