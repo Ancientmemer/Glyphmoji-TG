@@ -1,0 +1,41 @@
+name: Set Telegram Webhook (manual)
+
+# Manual run (Actions tab) or run on push to main if you prefer
+on:
+  workflow_dispatch:
+
+jobs:
+  set-webhook:
+    runs-on: ubuntu-latest
+    env:
+      APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
+      TG_TOKEN: ${{ secrets.TG_TOKEN }}
+    steps:
+      - name: Check inputs
+        run: |
+          if [ -z "${APP_DOMAIN}" ]; then
+            echo "ERROR: APP_DOMAIN secret is missing"
+            exit 1
+          fi
+          if [ -z "${TG_TOKEN}" ]; then
+            echo "ERROR: TG_TOKEN secret is missing"
+            exit 1
+          fi
+          echo "APP_DOMAIN is set (hidden). Proceeding..."
+      - name: Delete existing webhook (safe cleanup)
+        run: |
+          echo "Deleting existing webhook (if any)..."
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/deleteWebhook" -o /tmp/delete.json || true
+          echo "done"
+      - name: Set webhook to Koyeb app
+        id: setwh
+        run: |
+          WH_URL="${APP_DOMAIN}/${TG_TOKEN}"
+          echo "Setting webhook to: ${WH_URL} ..."
+          resp=$(curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/setWebhook" -F "url=${WH_URL}")
+          echo "setWebhook response: $resp"
+          echo "::set-output name=response::$resp"
+      - name: Verify webhook info
+        run: |
+          echo "Getting webhook info..."
+          curl -s "https://api.telegram.org/bot${TG_TOKEN}/getWebhookInfo" | jq .
