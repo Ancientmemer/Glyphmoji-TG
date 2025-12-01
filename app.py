@@ -168,16 +168,18 @@ def handle_start(message):
                 getattr(message, 'entities', None))
     chat_id = message.chat.id
     mode = get_mode_for_chat(chat_id)
-    text = (f"GlyphMoji bot ready. Current mode: <b>{mode}</b>\n\n"
+    bot.send_message(chat_id, (
+            "GlyphMoji bot ready. Current mode: <b>{mode}</b>\n\n"
             "Commands:\n"
             "/start - welcome\n"
-            "/help - this message\n"
+            "/help - user manual\n"
             "/mode - show current mode\n"
             "/changemod [emoji|unicode] - change or toggle mode\n"
             "/encode <text> - encode\n"
             "/decode <glyphs> - decode\n\n"
-            "Send plain text to auto-encode.")
-    bot.send_message(chat_id, text)
+            "Send plain text to auto-encode.\n\n"
+            "ᴩᴏᴡᴇʀᴇᴅ ʙʏ: @jb_links"
+    ))
 
 @bot.message_handler(commands=['help'])
 def handle_help(message):
