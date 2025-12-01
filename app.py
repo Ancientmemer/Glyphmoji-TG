@@ -158,55 +158,18 @@ def decode_text_with_mode(text: str, mode: str) -> str:
         return unicode_decode(text)
     return text
 
-# ---------- Bot command handlers (telebot) ----------
 @bot.message_handler(commands=['start'])
 def handle_start(message):
+    logger.info("start handler called — chat=%s text=%s", getattr(getattr(message, 'chat', None), 'id', None), getattr(message, 'text', None))
     chat_id = message.chat.id
-    mode = get_mode_for_chat(chat_id)
-    text = (f"GlyphMoji bot ready. Current mode: <b>{mode}</b>\n\n"
-            "Commands:\n"
-            "/start - welcome\n"
-            "/help - this message\n"
-            "/mode - show current mode\n"
-            "/changemod [emoji|unicode] - change or toggle mode\n"
-            "/encode <text> - encode\n"
-            "/decode <glyphs> - decode\n\n"
-            "Send plain text to auto-encode.")
-
-    # First try: normal send via telebot
-    try:
-        sent = bot.send_message(chat_id, text)
-        logger.info("bot.send_message success: %s", getattr(sent, 'message_id', 'no-id'))
-        return
-    except Exception as e:
-        logger.exception("bot.send_message raised exception: %s", e)
-
-    # Fallback: use direct Telegram HTTP API (so we can log response body)
-    try:
-        tg_api = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "HTML"
-        }
-        resp = requests.post(tg_api, data=payload, timeout=10)
-        try:
-            body = resp.json()
-        except Exception:
-            body = resp.text
-        logger.info("Fallback HTTP sendMessage status=%s body=%s", resp.status_code, body)
-        # If fallback succeeded, nothing more to do
-        if resp.status_code == 200 and isinstance(body, dict) and body.get("ok"):
-            return
-    except Exception as e:
-        logger.exception("Fallback HTTP sendMessage exception: %s", e)
-
-    # Final fallback: reply_to (different endpoint)
-    try:
-        bot.reply_to(message, text)
-        logger.info("bot.reply_to used as final fallback")
-    except Exception as e:
-        logger.exception("bot.reply_to also failed: %s", e)
+    bot.send_message(chat_id, (
+        "GlyphMoji is here. Use /mode to show current mode\n\n"
+        "/help - User manual\n"
+        "/mode - Show current mode\n"
+        "/changemod [emoji|unicode] - Change/toggle mode\n"
+        "/encode TEXT - Encode to current mode\n"
+        "/decode GLYPHS - Decode from current mode\n\nSend plain text to auto-encode.\n\nᴩᴏᴡᴇʀᴇᴅ ʙʏ: @jb_links"
+    ))
 
 @bot.message_handler(commands=['help'])
 def handle_help(message):
